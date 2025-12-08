@@ -456,4 +456,6 @@ Les clés JWT et secrets utilisés en développement doivent être changés en p
 
 **⭐ Si ce projet vous plaît, n'hésitez pas à lui donner une étoile sur GitHub ! ⭐**
 
+[Afficher l'image](https://visitor-badge.laobi.icu/badge?page_id=Evrard-Noumbi-3il.securebank-platform)
+
 **Dernière mise à jour:** Decembre 2025
