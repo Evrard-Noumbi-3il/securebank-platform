@@ -9,10 +9,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -32,15 +34,15 @@ public class AuthController {
     @Operation(summary = "Login", description = "Authenticate user and return JWT tokens")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
 
-        log.info("Tentative de login pour l’utilisateur: {}", request.getUsername());
+        log.info("Tentative de login pour l’utilisateur: {}", request.getEmail());
 
         try {
             AuthResponse response = authService.login(request);
-            log.info("Login réussi pour: {}", request.getUsername());
+            log.info("Login réussi pour: {}", request.getEmail());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.warn("Échec de login pour: {} — Raison: {}", request.getUsername(), e.getMessage());
+            log.warn("Échec de login pour: {} — Raison: {}", request.getEmail(), e.getMessage());
             throw e; // permet à Spring de renvoyer une erreur HTTP appropriée
         }
     }

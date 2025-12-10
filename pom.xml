@@ -15,6 +15,7 @@
 
     <modules>
         <module>services/auth-service</module>
+        <module>services/account-service</module>
         <!-- Les autres modules seront ajoutés progressivement -->
     </modules>
 
