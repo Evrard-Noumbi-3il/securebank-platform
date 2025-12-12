@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Notification</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .transaction-info {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .value {
+            color: #212529;
+        }
+        .amount {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏦 SecureBank Transaction</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello,</p>
+            <p>A transaction has been processed on your account.</p>
+            
+            <div class="amount" th:text="${amount + ' ' + currency}">100.00 EUR</div>
+            
+            <div class="transaction-info">
+                <div class="info-row">
+                    <span class="label">Transaction ID:</span>
+                    <span class="value" th:text="${transactionId}">#12345</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Type:</span>
+                    <span class="value" th:text="${type}">TRANSFER</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Status:</span>
+                    <span th:class="${'status status-' + #strings.toLowerCase(status)}" 
+                          th:text="${status}">COMPLETED</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Date:</span>
+                    <span class="value" th:text="${timestamp}">10/12/2024 14:30:00</span>
+                </div>
+                <div class="info-row" th:if="${description}">
+                    <span class="label">Description:</span>
+                    <span class="value" th:text="${description}">Payment description</span>
+                </div>
+            </div>
+            
+            <p style="color: #6c757d; font-size: 14px; margin-top: 30px;">
+                If you did not authorize this transaction, please contact us immediately.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 SecureBank Platform. All rights reserved.</p>
+            <p>This is an automated email. Please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>

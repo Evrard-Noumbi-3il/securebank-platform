@@ -309,11 +309,11 @@ securebank-platform/
 - [ ] Tests unitaires Auth Service (70%+ coverage)
 
 ### 🔨 Phase 2 : Core Banking (Semaines 2-3)
-- [ ] Account Service (CRUD comptes, transactions)
-- [ ] Payment Service (Stripe integration)
-- [ ] Notification Service (Email via JavaMailSender)
+- [x] Account Service (CRUD comptes, transactions)
+- [x] Payment Service (Stripe integration)
+- [x] Notification Service (Email via JavaMailSender)
 - [ ] API Gateway (Spring Cloud Gateway)
-- [ ] Kafka pour événements inter-services
+- [x] Kafka pour événements inter-services
 
 ### 🔜 Phase 3 : Security & Audit (Semaine 4)
 - [ ] Security Audit Service (Python FastAPI)
