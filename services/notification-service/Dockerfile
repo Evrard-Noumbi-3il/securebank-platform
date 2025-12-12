@@ -11,10 +11,10 @@ COPY services/ services/
 RUN mvn dependency:go-offline -B
 
 # Copier le code source
-COPY services/account-service/src services/account-service/src
+COPY services/notification-service/src services/notification-service/src
 
 # Build l'application
-RUN mvn clean package -DskipTests -f services/account-service/pom.xml
+RUN mvn clean package -DskipTests -f services/notification-service/pom.xml
 
 # Stage 2: Runtime
 FROM eclipse-temurin:17-jre-alpine
@@ -22,10 +22,10 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Copier le JAR depuis le stage de build
-COPY --from=build /app/services/account-service/target/*.jar app.jar
+COPY --from=build /app/services/notification-service/target/*.jar app.jar
 
 # Exposer le port
-EXPOSE 8082
+EXPOSE 8084
 
 # Créer un utilisateur non-root
 RUN addgroup -S spring && adduser -S spring -G spring

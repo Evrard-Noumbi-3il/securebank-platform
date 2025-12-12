@@ -1,0 +1,38 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: notification-service
+  
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: notification-service-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+      auto-offset-reset: earliest
+  
+  # Email Configuration
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+# Logging
+logging:
+  level:
+    com.securebank.notification: DEBUG
+    org.springframework.kafka: INFO
+    org.springframework.mail: DEBUG
