@@ -5,16 +5,13 @@ WORKDIR /app
 
 # Copier les fichiers pom
 COPY pom.xml .
-COPY services/ services/
+COPY contracts-common contracts-common/
+COPY services/notification-service services/notification-service/
+COPY services/account-service services/account-service/
+COPY services/auth-service services/auth-service/
+COPY services/payment-service services/payment-service/
 
-# Télécharger les dépendances
-RUN mvn dependency:go-offline -B
-
-# Copier le code source
-COPY services/notification-service/src services/notification-service/src
-
-# Build l'application
-RUN mvn clean package -DskipTests -f services/notification-service/pom.xml
+RUN mvn install -DskipTests -f pom.xml
 
 # Stage 2: Runtime
 FROM eclipse-temurin:17-jre-alpine

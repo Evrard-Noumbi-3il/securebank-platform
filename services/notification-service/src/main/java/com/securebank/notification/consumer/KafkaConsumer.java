@@ -1,6 +1,6 @@
 package com.securebank.notification.consumer;
 
-import com.securebank.notification.dto.TransactionEvent;
+import com.securebank.contracts.dto.TransactionEvent;
 import com.securebank.notification.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

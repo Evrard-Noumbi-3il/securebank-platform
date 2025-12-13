@@ -111,6 +111,12 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
         
+        <!-- Common Contracts -->
+        <dependency>
+            <groupId>com.securebank</groupId>
+            <artifactId>contracts-common</artifactId>
+        </dependency>
+    
     </dependencies>
 
     <build>

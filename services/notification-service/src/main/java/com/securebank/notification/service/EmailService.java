@@ -1,6 +1,6 @@
 package com.securebank.notification.service;
 
-import com.securebank.notification.dto.TransactionEvent;
+import com.securebank.contracts.dto.TransactionEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
