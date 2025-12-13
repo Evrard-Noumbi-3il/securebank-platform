@@ -1,7 +1,7 @@
 package com.securebank.account.service;
 
 import com.securebank.account.dto.TransactionDTO;
-import com.securebank.account.dto.TransactionEvent;
+import com.securebank.contracts.dto.TransactionEvent;
 import com.securebank.account.dto.TransferRequest;
 import com.securebank.account.exception.AccountNotFoundException;
 import com.securebank.account.exception.InsufficientBalanceException;

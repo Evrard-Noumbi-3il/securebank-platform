@@ -1,4 +1,4 @@
-package com.securebank.account.dto;
+package com.securebank.contracts.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,4 +24,5 @@ public class TransactionEvent {
     private String status;
     private String description;
     private LocalDateTime timestamp;
+    private String userEmail;
 }

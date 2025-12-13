@@ -57,6 +57,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Common Contracts -->
+        <dependency>
+            <groupId>com.securebank</groupId>
+            <artifactId>contracts-common</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

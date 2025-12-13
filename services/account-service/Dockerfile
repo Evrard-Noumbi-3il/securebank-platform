@@ -7,14 +7,10 @@ WORKDIR /app
 COPY pom.xml .
 COPY services/ services/
 
-# Télécharger les dépendances
-RUN mvn dependency:go-offline -B
+# AJOUT CRITIQUE : Copier le module contracts-common dans le WORKDIR (/app)
+COPY contracts-common contracts-common/
 
-# Copier le code source
-COPY services/account-service/src services/account-service/src
-
-# Build l'application
-RUN mvn clean package -DskipTests -f services/account-service/pom.xml
+RUN mvn install -DskipTests -f pom.xml
 
 # Stage 2: Runtime
 FROM eclipse-temurin:17-jre-alpine

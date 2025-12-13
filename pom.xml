@@ -14,9 +14,11 @@
     <description>Secure Banking Platform with Microservices Architecture</description>
 
     <modules>
+        <module>contracts-common</module>
         <module>services/auth-service</module>
         <module>services/account-service</module>
         <module>services/payment-service</module>
+        <module>services/notification-service</module>
         <!-- Les autres modules seront ajoutés progressivement -->
     </modules>
 
@@ -36,6 +38,12 @@
                 <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.securebank</groupId>
+                <artifactId>contracts-common</artifactId>
+                <version>${project.version}</version>  
             </dependency>
         </dependencies>
     </dependencyManagement>

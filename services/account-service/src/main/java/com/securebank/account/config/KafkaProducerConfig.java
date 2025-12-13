@@ -1,6 +1,6 @@
 package com.securebank.account.config;
 
-import com.securebank.account.dto.TransactionEvent;
+import com.securebank.contracts.dto.TransactionEvent;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +30,7 @@ public class KafkaProducerConfig {
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
         
         // 2. Transmettre la propriété de configuration du JsonSerializer
-        configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
+        configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, true);
         
         // Crée la fabrique, qui utilisera les classes de sérialiseurs spécifiées ci-dessus.
         // C'est la méthode recommandée pour laisser Spring Kafka gérer la construction.

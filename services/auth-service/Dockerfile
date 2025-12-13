@@ -6,6 +6,12 @@ WORKDIR /app
 COPY pom.xml .
 COPY services/ services/
 
+# AJOUTEZ CECI pour copier le POM du nouveau module
+COPY contracts-common/pom.xml contracts-common/ 
+
+# AJOUTEZ CECI pour copier les sources du nouveau module
+COPY contracts-common/src contracts-common/src
+
 # Télécharger toutes les dépendances
 RUN mvn dependency:go-offline -B
 
