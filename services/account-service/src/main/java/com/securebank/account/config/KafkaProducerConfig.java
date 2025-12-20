@@ -1,6 +1,6 @@
 package com.securebank.account.config;
 
-import com.securebank.contracts.dto.TransactionEvent;
+import com.securebank.account.dto.TransactionEvent;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;

@@ -10,7 +10,7 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
-import com.securebank.contracts.dto.TransactionEvent;
+import com.securebank.notification.dto.TransactionEvent;
 
 import java.util.HashMap;
 import java.util.Map;

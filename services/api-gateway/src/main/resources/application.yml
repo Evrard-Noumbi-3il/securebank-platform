@@ -1,0 +1,216 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  
+  cloud:
+    gateway:
+      # Global CORS configuration
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: 
+              - "http://localhost:3000"
+              - "http://localhost:3001"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      # Routes configuration
+      routes:
+        # Auth Service Routes (public - no JWT validation)
+        - id: auth-service-register
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/api/auth/register
+            - Method=POST
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+
+        - id: auth-service-login
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/api/auth/login
+            - Method=POST
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+
+        - id: auth-service-refresh
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/api/auth/refresh
+            - Method=POST
+          filters:
+            - StripPrefix=1
+
+        # Auth Service Routes (protected - JWT validation required)
+        - id: auth-service-protected
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/api/auth/logout,/api/users/**
+          filters:
+            - StripPrefix=1
+            - JwtAuthenticationFilter
+
+        # Account Service Routes (protected)
+        - id: account-service
+          uri: http://account-service:8082
+          predicates:
+            - Path=/api/accounts/**,/api/transactions/**
+          filters:
+            - StripPrefix=1
+            - JwtAuthenticationFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+
+        # Payment Service Routes (protected)
+        - id: payment-service
+          uri: http://payment-service:8083
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - StripPrefix=1
+            - JwtAuthenticationFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+
+        # Payment Service Webhooks (public - no JWT, but signature verification in service)
+        - id: payment-webhooks
+          uri: http://payment-service:8083
+          predicates:
+            - Path=/api/webhooks/**
+          filters:
+            - StripPrefix=1
+
+        # Security Audit Service Routes (protected - admin only)
+        - id: security-audit-service
+          uri: http://security-audit-service:8085
+          predicates:
+            - Path=/api/security/**
+          filters:
+            - StripPrefix=1
+            - JwtAuthenticationFilter
+
+      # Default filters applied to all routes
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+        - name: Retry
+          args:
+            retries: 3
+            statuses: BAD_GATEWAY,GATEWAY_TIMEOUT
+            methods: GET
+            backoff:
+              firstBackoff: 50ms
+              maxBackoff: 500ms
+
+  # Redis configuration for rate limiting
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+# JWT configuration
+jwt:
+  secret: ${JWT_SECRET:mySecretKeyForJWTTokenGenerationAndValidation123456789}
+  expiration: 3600000 # 1 hour in milliseconds
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.securebank.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/api-gateway.log
+
+# Production profile
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: 
+              - "https://yourdomain.com"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+            allowedHeaders: "*"
+            allowCredentials: true
+
+      routes:
+        # Production URIs (replace with actual service URLs)
+        - id: auth-service-register
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/api/auth/register
+        
+        - id: account-service
+          uri: http://account-service:8082
+          predicates:
+            - Path=/api/accounts/**,/api/transactions/**
+        
+        - id: payment-service
+          uri: http://payment-service:8083
+          predicates:
+            - Path=/api/payments/**
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+
+logging:
+  level:
+    root: WARN
+    com.securebank.gateway: INFO
