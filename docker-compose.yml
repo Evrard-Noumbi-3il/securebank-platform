@@ -183,6 +183,53 @@ services:
       - securebank-network
     restart: unless-stopped
 
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    container_name: api-gateway
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: my-super-secret-key-for-development-only-change-in-production-min-256-bits
+      JWT_EXPIRATION: 3600000
+      # Service URLs
+      AUTH_SERVICE_URL: http://auth-service:8081
+      ACCOUNT_SERVICE_URL: http://account-service:8082
+      PAYMENT_SERVICE_URL: http://payment-service:8083
+      SECURITY_AUDIT_SERVICE_URL: http://security-audit-service:8085
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - account-service
+      - payment-service
+      - redis
+    networks:
+      - securebank-network
+    restart: unless-stopped
+
+  # Security Audit Service
+  security-audit-service:
+    build:
+      context: ./services/security-audit-service
+      dockerfile: Dockerfile
+    container_name: security-audit-service
+    environment:
+      DB_HOST: postgres-business
+      DB_NAME: business_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    ports:
+      - "8085:8085"
+    depends_on:
+      - kafka
+    networks:
+      - securebank-network
+    restart: unless-stopped
+
 networks:
   securebank-network:
     driver: bridge

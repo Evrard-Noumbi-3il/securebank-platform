@@ -1,6 +1,6 @@
 package com.securebank.account.service;
 
-import com.securebank.contracts.dto.TransactionEvent;
+import com.securebank.account.dto.TransactionEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

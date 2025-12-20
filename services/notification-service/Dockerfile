@@ -6,10 +6,7 @@ WORKDIR /app
 # Copier les fichiers pom
 COPY pom.xml .
 COPY contracts-common contracts-common/
-COPY services/notification-service services/notification-service/
-COPY services/account-service services/account-service/
-COPY services/auth-service services/auth-service/
-COPY services/payment-service services/payment-service/
+COPY services/ services/
 
 RUN mvn install -DskipTests -f pom.xml
 

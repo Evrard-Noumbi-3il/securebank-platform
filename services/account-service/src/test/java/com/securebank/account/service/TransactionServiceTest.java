@@ -1,5 +1,6 @@
 package com.securebank.account.service;
 
+import static com.securebank.account.model.Account.AccountStatus.ACTIVE;
 import com.securebank.account.dto.TransactionDTO;
 import com.securebank.account.dto.TransferRequest;
 import com.securebank.account.exception.AccountNotFoundException;
@@ -70,9 +71,16 @@ class TransactionServiceTest {
                 .currency("EUR")
                 .status(Account.AccountStatus.ACTIVE)
                 .build();
+        
+        BigDecimal amount = new BigDecimal("100.00");
 
         // Requête de transfert standard
-        transferRequest = new TransferRequest(1L, 2L, new BigDecimal("100.00"), "Test transfer");
+        transferRequest = TransferRequest.builder()
+        	    .fromAccountId(1L)
+        	    .toAccountId(2L)
+        	    .amount(amount)
+        	    .description("Test description")
+        	    .build();
     }
 
     @Test
