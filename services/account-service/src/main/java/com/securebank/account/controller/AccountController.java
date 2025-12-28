@@ -1,6 +1,8 @@
 package com.securebank.account.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import com.securebank.account.dto.AccountDTO;
+import com.securebank.account.dto.TransactionRequest;
 import com.securebank.account.dto.CreateAccountRequest;
 import com.securebank.account.service.AccountService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/accounts")
 @RequiredArgsConstructor
@@ -73,5 +76,15 @@ public class AccountController {
             @RequestHeader("X-User-Id") Long userId) {
         AccountDTO account = accountService.activateAccount(accountId, userId);
         return ResponseEntity.ok(account);
+    }
+    
+    @PostMapping("/{accountId}/deposit")
+    public ResponseEntity<AccountDTO> deposit(
+            @PathVariable Long accountId,
+            @RequestBody TransactionRequest request) {
+        
+        log.info("Dépôt sur le compte ID {}: {} EUR", accountId, request.getAmount());
+        AccountDTO updatedAccount = accountService.deposit(accountId, request.getAmount(), request.getDescription());
+        return ResponseEntity.ok(updatedAccount);
     }
 }

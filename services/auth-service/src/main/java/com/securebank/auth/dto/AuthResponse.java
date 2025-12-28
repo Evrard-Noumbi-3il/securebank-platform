@@ -19,6 +19,8 @@ public class AuthResponse {
     private String lastName;
     private String accessToken;
     private String refreshToken;
+    
+    @Builder.Default
     private String tokenType = "Bearer";
     private List<String> roles;
 }

@@ -34,7 +34,7 @@ spring:
             - Path=/api/auth/register
             - Method=POST
           filters:
-            - StripPrefix=1
+            #- StripPrefix=1
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 5
@@ -46,7 +46,7 @@ spring:
             - Path=/api/auth/login
             - Method=POST
           filters:
-            - StripPrefix=1
+            #- StripPrefix=1
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 5
@@ -58,15 +58,24 @@ spring:
             - Path=/api/auth/refresh
             - Method=POST
           filters:
-            - StripPrefix=1
+            #- StripPrefix=1
 
         # Auth Service Routes (protected - JWT validation required)
         - id: auth-service-protected
           uri: http://auth-service:8081
           predicates:
-            - Path=/api/auth/logout,/api/users/**
+            - Path=/api/users/**
           filters:
-            - StripPrefix=1
+            #- StripPrefix=1
+            - JwtAuthenticationFilter
+
+        # user Service routes (loggout)
+        - id: auth-service-logout
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/api/auth/logout
+          filters:
+            #- StripPrefix=1
             - JwtAuthenticationFilter
 
         # Account Service Routes (protected)
@@ -75,7 +84,7 @@ spring:
           predicates:
             - Path=/api/accounts/**,/api/transactions/**
           filters:
-            - StripPrefix=1
+           # - StripPrefix=1
             - JwtAuthenticationFilter
             - name: RequestRateLimiter
               args:
@@ -88,7 +97,7 @@ spring:
           predicates:
             - Path=/api/payments/**
           filters:
-            - StripPrefix=1
+            #- StripPrefix=1
             - JwtAuthenticationFilter
             - name: RequestRateLimiter
               args:
@@ -101,7 +110,7 @@ spring:
           predicates:
             - Path=/api/webhooks/**
           filters:
-            - StripPrefix=1
+           # - StripPrefix=1
 
         # Security Audit Service Routes (protected - admin only)
         - id: security-audit-service
@@ -109,7 +118,7 @@ spring:
           predicates:
             - Path=/api/security/**
           filters:
-            - StripPrefix=1
+            #- StripPrefix=1
             - JwtAuthenticationFilter
 
       # Default filters applied to all routes
@@ -127,7 +136,7 @@ spring:
   # Redis configuration for rate limiting
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       timeout: 2000ms
@@ -147,7 +156,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: "health,info,metrics,prometheus"
   endpoint:
     health:
       show-details: always
