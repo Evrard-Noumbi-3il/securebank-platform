@@ -38,8 +38,8 @@ spring:
 
 # Stripe Configuration
 stripe:
-  api-key: ${STRIPE_API_KEY:sk_test_your_key_here}
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_your_secret_here}
+  api-key: ${STRIPE_API_KEY}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
 
 # Kafka Topics
 kafka:

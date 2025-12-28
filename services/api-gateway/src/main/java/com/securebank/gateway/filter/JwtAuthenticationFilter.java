@@ -28,6 +28,13 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
 
+            String path = request.getURI().getPath();
+
+            // AJOUT : Ignorer explicitement les routes d'authentification
+            if (path.contains("/api/auth/register") || path.contains("/api/auth/login") || path.contains("/api/auth/refresh")) {
+                return chain.filter(exchange);
+            }
+            
             // Check if Authorization header exists
             if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
                 log.warn("Missing Authorization header");

@@ -5,6 +5,8 @@
 
 set -e
 
+unset GREP_OPTIONS
+
 # Colors
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -116,10 +118,13 @@ if echo "$REGISTER_RESPONSE" | grep -q "accessToken"; then
     TESTS_PASSED=$((TESTS_PASSED + 1))
     
     # Extraire les tokens
-    ACCESS_TOKEN=$(echo "$REGISTER_RESPONSE" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
-    REFRESH_TOKEN=$(echo "$REGISTER_RESPONSE" | grep -o '"refreshToken":"[^"]*' | cut -d'"' -f4)
-    USER_ID=$(echo "$REGISTER_RESPONSE" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
+    ACCESS_TOKEN=$(echo "$REGISTER_RESPONSE" | sed -n 's/.*"accessToken":"\([^"]*\)".*/\1/p' | tr -d '\r\n ')
+    REFRESH_TOKEN=$(echo "$REGISTER_RESPONSE" | sed -n 's/.*"refreshToken":"\([^"]*\)".*/\1/p' | tr -d '\r' | tr -d ' ')
+    USER_ID=$(echo "$REGISTER_RESPONSE" | sed -n 's/.*"id":\([0-9]*\).*/\1/p' | tr -d '\r' | tr -d ' ')
     
+    echo "DEBUG: Token length is ${#ACCESS_TOKEN}"
+    if [ -z "$ACCESS_TOKEN" ]; then echo "ERROR: Token is empty"; exit 1; fi
+
     echo -e "${BLUE}User ID: ${USER_ID}${NC}"
     echo -e "${BLUE}Access Token: ${ACCESS_TOKEN:0:30}...${NC}"
 else
@@ -184,8 +189,7 @@ ACCOUNT1_RESPONSE=$(curl -s -X POST ${API_GATEWAY}/api/accounts \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -d '{
     "accountType": "CHECKING",
-    "currency": "EUR",
-    "initialBalance": 1000.00
+    "currency": "EUR"
   }')
 
 TESTS_TOTAL=$((TESTS_TOTAL + 1))
@@ -194,8 +198,8 @@ if echo "$ACCOUNT1_RESPONSE" | grep -q "accountNumber"; then
     echo -e "${GREEN}✓ PASSED${NC}"
     TESTS_PASSED=$((TESTS_PASSED + 1))
     
-    ACCOUNT1_ID=$(echo "$ACCOUNT1_RESPONSE" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
-    ACCOUNT1_NUMBER=$(echo "$ACCOUNT1_RESPONSE" | grep -o '"accountNumber":"[^"]*' | cut -d'"' -f4)
+    ACCOUNT1_ID=$(echo "$ACCOUNT1_RESPONSE" | sed -n 's/.*"id":\([0-9]*\),.*/\1/p')
+    ACCOUNT1_NUMBER=$(echo "$ACCOUNT1_RESPONSE" | sed -n 's/.*"accountNumber":"\([^"]*\)".*/\1/p')
     echo -e "${BLUE}Account Number: ${ACCOUNT1_NUMBER}${NC}"
 else
     echo -e "${BLUE}Test ${TESTS_TOTAL}: Créer compte bancaire 1${NC}"
@@ -213,8 +217,7 @@ ACCOUNT2_RESPONSE=$(curl -s -X POST ${API_GATEWAY}/api/accounts \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -d '{
     "accountType": "SAVINGS",
-    "currency": "EUR",
-    "initialBalance": 500.00
+    "currency": "EUR"
   }')
 
 TESTS_TOTAL=$((TESTS_TOTAL + 1))
@@ -223,8 +226,8 @@ if echo "$ACCOUNT2_RESPONSE" | grep -q "accountNumber"; then
     echo -e "${GREEN}✓ PASSED${NC}"
     TESTS_PASSED=$((TESTS_PASSED + 1))
     
-    ACCOUNT2_ID=$(echo "$ACCOUNT2_RESPONSE" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
-    ACCOUNT2_NUMBER=$(echo "$ACCOUNT2_RESPONSE" | grep -o '"accountNumber":"[^"]*' | cut -d'"' -f4)
+    ACCOUNT2_ID=$(echo "$ACCOUNT2_RESPONSE" | sed -n 's/.*"id":\([0-9]*\),.*/\1/p')
+    ACCOUNT2_NUMBER=$(echo "$ACCOUNT2_RESPONSE" | sed -n 's/.*"accountNumber":"\([^"]*\)".*/\1/p')
     echo -e "${BLUE}Account Number: ${ACCOUNT2_NUMBER}${NC}"
 else
     echo -e "${BLUE}Test ${TESTS_TOTAL}: Créer compte bancaire 2${NC}"
@@ -253,6 +256,20 @@ fi
 echo ""
 
 # Test 9: Effectuer un virement
+echo -e "${BLUE}Action : Dépôt initial de 500 EUR${NC}"
+DEPOSIT_DATA="{\"amount\": 500.00, \"description\": \"Initial Deposit\"}"
+
+curl -s -X POST "${API_GATEWAY}/api/accounts/${ACCOUNT1_ID}/deposit" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -d "$DEPOSIT_DATA"
+
+echo ""
+
+sleep 1
+
+echo ""
+
 TRANSFER_RESPONSE=$(curl -s -X POST ${API_GATEWAY}/api/transactions/transfer \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
@@ -279,8 +296,9 @@ fi
 echo ""
 
 # Test 10: Vérifier l'historique des transactions
-TRANSACTIONS_RESPONSE=$(curl -s -X GET "${API_GATEWAY}/api/accounts/${ACCOUNT1_ID}/transactions" \
-  -H "Authorization: Bearer ${ACCESS_TOKEN}")
+TRANSACTIONS_RESPONSE=$(curl -s -X GET "${API_GATEWAY}/api/transactions/account/${ACCOUNT1_ID}" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H 'X-User-Id: "${USER_ID}"')
 
 TESTS_TOTAL=$((TESTS_TOTAL + 1))
 if echo "$TRANSACTIONS_RESPONSE" | grep -q "Test E2E Transfer"; then
@@ -300,14 +318,18 @@ echo -e "${YELLOW}════════════════════�
 echo ""
 
 # Test 11: Créer un paiement
-PAYMENT_RESPONSE=$(curl -s -X POST ${API_GATEWAY}/api/payments \
+PAYMENT_RESPONSE=$(curl -s -X POST "${API_GATEWAY}/api/payments" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-  -d '{
-    "amount": 50.00,
-    "currency": "EUR",
-    "idempotencyKey": "'$(uuidgen)'"
-  }')
+  -H 'X-User-Id: "${USER_ID}"' \
+  -d "{
+    \"accountId\": ${ACCOUNT1_ID},
+    \"amount\": 50.00,
+    \"currency\": \"EUR\",
+    \"paymentMethod\": \"CARD\",
+    \"description\": \"Test E2E Payment\",
+    \"idempotencyKey\": \"$(date +%s%N)\"
+  }")
 
 TESTS_TOTAL=$((TESTS_TOTAL + 1))
 if echo "$PAYMENT_RESPONSE" | grep -q "id"; then
@@ -371,14 +393,13 @@ echo -e "${YELLOW}════════════════════�
 echo ""
 
 # Test 14: Rate Limiting (faire plusieurs requêtes rapidement)
-echo -e "${BLUE}Test ${TESTS_TOTAL + 1}: Rate Limiting (6 requêtes rapides)${NC}"
+echo -e "${BLUE}Test $((TESTS_TOTAL + 1)): Rate Limiting (20 requêtes rapides)${NC}"
 RATE_LIMIT_BLOCKED=false
 
-for i in {1..6}; do
-    RESPONSE=$(curl -s -w '%{http_code}' -X POST ${API_GATEWAY}/api/auth/login \
+for i in {1..20}; do
+    RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST ${API_GATEWAY}/api/auth/login \
       -H "Content-Type: application/json" \
-      -d '{"email":"test@test.com","password":"test"}' \
-      -o /dev/null)
+      -d "{\"email\":\"$TEST_EMAIL\",\"password\":\"$TEST_PASSWORD\"}")
     
     if [ "$RESPONSE" -eq 429 ]; then
         RATE_LIMIT_BLOCKED=true
@@ -391,7 +412,7 @@ if [ "$RATE_LIMIT_BLOCKED" = true ]; then
     echo -e "${GREEN}✓ PASSED${NC} (Rate limiting fonctionne)"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    echo -e "${YELLOW}⚠ SKIPPED${NC} (Rate limiting non déclenché - normal avec 6 requêtes)"
+    echo -e "${YELLOW}⚠ SKIPPED${NC} (Rate limiting non déclenché - normal avec 20 requêtes)"
     TESTS_PASSED=$((TESTS_PASSED + 1))
 fi
 

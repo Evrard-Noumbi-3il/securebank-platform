@@ -13,11 +13,16 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.securebank.account.model.Transaction;
+import com.securebank.account.model.Transaction.TransactionType;
+import com.securebank.account.model.Transaction.TransactionStatus;
+import com.securebank.account.repository.TransactionRepository;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
-
+import java.time.LocalDateTime;
 
 
 @Service
@@ -27,6 +32,7 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private static final Random RANDOM = new Random();
+    private final TransactionRepository transactionRepository;
 
     /**
      * Créer un nouveau compte bancaire
@@ -192,5 +198,30 @@ public class AccountService {
                 .createdAt(account.getCreatedAt())
                 .updatedAt(account.getUpdatedAt())
                 .build();
+    }
+    
+    @Transactional
+    public AccountDTO deposit(Long accountId, BigDecimal amount, String description) {
+        // 1. Récupérer le compte
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException("Compte non trouvé"));
+
+        // 2. Mettre à jour le solde
+        account.setBalance(account.getBalance().add(amount));
+        accountRepository.save(account);
+
+        // 3. Créer l'enregistrement de transaction (pour le Test 10)
+        Transaction transaction = Transaction.builder()
+                .fromAccountId(0L) 
+                .toAccountId(accountId)
+                .amount(amount)
+                .type(TransactionType.DEPOSIT)
+                .status(TransactionStatus.COMPLETED)
+                .description(description)
+                .createdAt(LocalDateTime.now())
+                .build();
+        transactionRepository.save(transaction);
+
+        return mapToDTO(account);
     }
 }

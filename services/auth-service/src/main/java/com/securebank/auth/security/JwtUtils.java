@@ -1,5 +1,6 @@
 package com.securebank.auth.security;
 
+import lombok.RequiredArgsConstructor;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
@@ -9,15 +10,21 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import com.securebank.auth.model.User;
+import com.securebank.auth.repository.UserRepository;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.util.Date;
 
 @Component
+@RequiredArgsConstructor
 public class JwtUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
+    private final UserRepository userRepository;
+    
     @Value("${jwt.secret}")
     private String jwtSecret;
 
@@ -36,23 +43,28 @@ public class JwtUtils {
      */
     public String generateAccessToken(Authentication authentication) {
         UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
-        return generateToken(userPrincipal.getUsername(), jwtExpirationMs);
+        return generateAccessToken(userPrincipal.getUsername());
     }
 
     public String generateAccessToken(String email) {
-        return generateToken(email, jwtExpirationMs);
+    	User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Error: User not found."));
+        return generateToken(user, jwtExpirationMs);
     }
 
     public String generateRefreshToken(String email) {
-        return generateToken(email, jwtRefreshExpirationMs);
+    	User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Error: User not found."));
+        return generateToken(user, jwtRefreshExpirationMs);
     }
 
-    private String generateToken(String subject, long expiration) {
+    private String generateToken(User user, long expiration) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
-                .subject(subject)
+        		.subject(user.getEmail())
+                .claim("userId", String.valueOf(user.getId()))
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey(), Jwts.SIG.HS256)   // <= Nouveau style 0.12.x
