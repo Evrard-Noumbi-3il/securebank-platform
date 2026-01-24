@@ -18,7 +18,7 @@ public class TransferRequest {
     private Long fromAccountId;
     
     @NotNull(message = "To account ID is required")
-    private Long toAccountId;
+    private String toAccountNumber;
     
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
