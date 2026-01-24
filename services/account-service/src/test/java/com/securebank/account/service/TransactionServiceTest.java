@@ -77,8 +77,8 @@ class TransactionServiceTest {
         // Requête de transfert standard
         transferRequest = TransferRequest.builder()
         	    .fromAccountId(1L)
-        	    .toAccountId(2L)
-        	    .amount(amount)
+        	    .toAccountNumber("FR7698765432109876543210987")
+        	    .amount(new BigDecimal("100.00"))
         	    .description("Test description")
         	    .build();
     }
@@ -157,7 +157,7 @@ class TransactionServiceTest {
     @DisplayName("Should throw exception when transferring to same account")
     void testTransferToSameAccount() {
         // Given
-        TransferRequest sameAccountRequest = new TransferRequest(1L, 1L, new BigDecimal("100.00"), "Invalid");
+        TransferRequest sameAccountRequest = new TransferRequest(1L, "FR7612345678901234567890123", new BigDecimal("100.00"), "Invalid");
 
         // When & Then
         assertThrows(InvalidTransferException.class, () -> {
@@ -199,7 +199,7 @@ class TransactionServiceTest {
     @DisplayName("Should throw exception when amount is zero or negative")
     void testTransferWithInvalidAmount() {
         // Given
-        TransferRequest zeroAmountRequest = new TransferRequest(1L, 2L, new BigDecimal("0.00"), "Invalid");
+        TransferRequest zeroAmountRequest = new TransferRequest(1L, "FR7698765432109876543210987", new BigDecimal("0.00"), "Invalid");
         
         // When & Then
         assertThrows(InvalidTransferException.class, () -> {
@@ -207,7 +207,7 @@ class TransactionServiceTest {
         });
         
         // Given
-        TransferRequest negativeAmountRequest = new TransferRequest(1L, 2L, new BigDecimal("-10.00"), "Invalid");
+        TransferRequest negativeAmountRequest = new TransferRequest(1L, "FR7698765432109876543210123", new BigDecimal("-10.00"), "Invalid");
         
         // When & Then
         assertThrows(InvalidTransferException.class, () -> {

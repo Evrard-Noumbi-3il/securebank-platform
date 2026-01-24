@@ -65,6 +65,8 @@ public class Transaction {
 
     public enum TransactionType {
         TRANSFER,
+        TRANSFER_IN,
+        TRANSFER_OUT,
         DEPOSIT,
         WITHDRAWAL,
         PAYMENT

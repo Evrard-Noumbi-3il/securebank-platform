@@ -12,6 +12,7 @@ import com.securebank.account.repository.AccountRepository;
 import com.securebank.account.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,7 +41,7 @@ public class TransactionService {
     @Transactional
     public TransactionDTO transfer(Long userId, TransferRequest request) {
         log.info("Processing transfer: from={}, to={}, amount={}", 
-                request.getFromAccountId(), request.getToAccountId(), request.getAmount());
+                request.getFromAccountId(), request.getToAccountNumber(), request.getAmount());
 
         // Validations métier
         validateTransferRequest(request);
@@ -48,8 +50,8 @@ public class TransactionService {
         Account fromAccount = accountRepository.findByIdWithLock(request.getFromAccountId())
                 .orElseThrow(() -> new AccountNotFoundException("Source account not found: " + request.getFromAccountId()));
 
-        Account toAccount = accountRepository.findByIdWithLock(request.getToAccountId())
-                .orElseThrow(() -> new AccountNotFoundException("Destination account not found: " + request.getToAccountId()));
+        Account toAccount = accountRepository.findByAccountNumber(request.getToAccountNumber())
+        	    .orElseThrow(() -> new AccountNotFoundException("Compte destinataire introuvable"));
 
         // Vérifier que le compte source appartient à l'utilisateur
         if (!fromAccount.getUserId().equals(userId)) {
@@ -106,7 +108,7 @@ public class TransactionService {
             // Publier l'événement sur Kafka
             publishTransactionEvent(transaction, userId);
 
-            return mapToDTO(transaction);
+            return mapToDTO(transaction, fromAccount.getId());
 
         } catch (Exception e) {
             // En cas d'erreur, marquer la transaction comme échouée
@@ -136,10 +138,30 @@ public class TransactionService {
                 .findByFromAccountIdOrToAccountIdOrderByCreatedAtDesc(accountId, accountId);
 
         return transactions.stream()
-                .map(this::mapToDTO)
+        		.map(t -> this.mapToDTO(t, accountId))
                 .collect(Collectors.toList());
     }
 
+    public List<TransactionDTO> getUserTransactions(Long userId) {
+        // Récupérer tous les comptes de l'utilisateur
+        List<Account> userAccounts = accountRepository.findByUserId(userId);
+        
+        return userAccounts.stream()
+                .flatMap(account -> transactionRepository.findByFromAccountIdOrToAccountId(account.getId(), account.getId()).stream()
+                		.map(t -> this.mapToDTO(t, account.getId())))
+                .sorted(Comparator.comparing(TransactionDTO::getCreatedAt).reversed())
+                .collect(Collectors.toList());
+    }
+
+    public Page<TransactionDTO> getUserTransactionsPaginated(Long userId, Pageable pageable) {
+        List<TransactionDTO> allTransactions = getUserTransactions(userId);
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), allTransactions.size());
+        
+        List<TransactionDTO> pageContent = allTransactions.subList(start, end);
+        return new PageImpl<>(pageContent, pageable, allTransactions.size());
+    }
+    
     /**
      * Récupérer l'historique paginé
      */
@@ -153,14 +175,14 @@ public class TransactionService {
 
         return transactionRepository
                 .findByFromAccountIdOrToAccountIdOrderByCreatedAtDesc(accountId, accountId, pageable)
-                .map(this::mapToDTO);
+                .map(t -> this.mapToDTO(t, accountId));
     }
 
     /**
      * Validations métier
      */
     private void validateTransferRequest(TransferRequest request) {
-        if (request.getFromAccountId().equals(request.getToAccountId())) {
+        if (request.getFromAccountId().equals(request.getToAccountNumber())) {
             throw new InvalidTransferException("Cannot transfer to the same account");
         }
 
@@ -204,14 +226,24 @@ public class TransactionService {
     /**
      * Mapper Transaction → TransactionDTO
      */
-    private TransactionDTO mapToDTO(Transaction transaction) {
+    private TransactionDTO mapToDTO(Transaction transaction, Long currentAccountId) {
+        Transaction.TransactionType contextualType = transaction.getType();
+
+        if (transaction.getType() == Transaction.TransactionType.TRANSFER) {
+            if (currentAccountId.equals(transaction.getFromAccountId())) {
+                contextualType = Transaction.TransactionType.TRANSFER_OUT; 
+            } else if (currentAccountId.equals(transaction.getToAccountId())) {
+                contextualType = Transaction.TransactionType.TRANSFER_IN;
+            }
+        }
+
         return TransactionDTO.builder()
                 .id(transaction.getId())
                 .fromAccountId(transaction.getFromAccountId())
                 .toAccountId(transaction.getToAccountId())
                 .amount(transaction.getAmount())
                 .currency(transaction.getCurrency())
-                .type(transaction.getType())
+                .type(contextualType)
                 .status(transaction.getStatus())
                 .description(transaction.getDescription())
                 .reference(transaction.getReference())

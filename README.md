@@ -492,10 +492,10 @@ securebank-platform/
 
 ### 🔨 Phase 3 : Security & Audit (Semaine 4) - EN COURS
 - [x] Structure Security Audit Service (Python FastAPI)
-- [ ] OWASP Dependency Check integration
-- [ ] Bandit pour scan code Python
-- [ ] Trivy pour scan Docker images
-- [ ] Dashboard sécurité avec score /100
+- [x] OWASP Dependency Check integration
+- [x] Bandit pour scan code Python
+- [x] Trivy pour scan Docker images
+- [x] Dashboard sécurité avec score /100
 - [ ] SonarQube integration
 - [ ] Security gates dans CI/CD
 
