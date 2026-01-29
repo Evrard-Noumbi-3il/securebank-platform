@@ -496,13 +496,13 @@ securebank-platform/
 - [x] Bandit pour scan code Python
 - [x] Trivy pour scan Docker images
 - [x] Dashboard sécurité avec score /100
-- [ ] SonarQube integration
+- [x] SonarQube integration
 - [ ] Security gates dans CI/CD
 
 ### 🔜 Phase 4 : Frontend (Semaines 5-6)
-- [ ] Application React avec TypeScript
-- [ ] Dashboard utilisateur
-- [ ] Pages : Login, Register, Accounts, Transactions, Transfer
+- [x] Application React avec TypeScript
+- [x] Dashboard utilisateur
+- [x] Pages : Login, Register, Accounts, Transactions, Transfer
 - [ ] Intégration Stripe frontend
 - [ ] Redux pour state management
 - [ ] Responsive design (Tailwind CSS)

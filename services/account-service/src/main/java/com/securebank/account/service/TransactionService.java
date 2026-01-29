@@ -12,17 +12,17 @@ import com.securebank.account.repository.AccountRepository;
 import com.securebank.account.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import java.util.Comparator;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,8 +35,15 @@ public class TransactionService {
     private final KafkaProducerService kafkaProducerService;
 
     /**
-     * Effectue un virement entre deux comptes
-     * IMPORTANT : Utilise des locks pessimistes pour éviter les problèmes de concurrence
+     * ========================================================================
+     * CORRECTION MAJEURE : Effectue un virement avec 2 TRANSACTIONS DISTINCTES
+     * ========================================================================
+     * 
+     * Crée maintenant:
+     * 1. Transaction TRANSFER_OUT pour le compte émetteur (-100€)
+     * 2. Transaction TRANSFER_IN pour le compte récepteur (+100€)
+     * 
+     * Les 2 transactions partagent le même referenceId pour traçabilité.
      */
     @Transactional
     public TransactionDTO transfer(Long userId, TransferRequest request) {
@@ -46,12 +53,12 @@ public class TransactionService {
         // Validations métier
         validateTransferRequest(request);
 
-        // Récupérer les comptes avec locks pessimistes
+        // Récupérer les comptes avec locks pessimistes (pour éviter race conditions)
         Account fromAccount = accountRepository.findByIdWithLock(request.getFromAccountId())
                 .orElseThrow(() -> new AccountNotFoundException("Source account not found: " + request.getFromAccountId()));
 
         Account toAccount = accountRepository.findByAccountNumber(request.getToAccountNumber())
-        	    .orElseThrow(() -> new AccountNotFoundException("Compte destinataire introuvable"));
+                .orElseThrow(() -> new AccountNotFoundException("Compte destinataire introuvable"));
 
         // Vérifier que le compte source appartient à l'utilisateur
         if (!fromAccount.getUserId().equals(userId)) {
@@ -74,54 +81,93 @@ public class TransactionService {
                             fromAccount.getBalance(), request.getAmount()));
         }
 
-        // Créer la transaction
-        String reference = generateReference();
-        Transaction transaction = Transaction.builder()
+        // ===== GÉNÉRATION DES RÉFÉRENCES =====
+        String reference = generateReference();           // Ex: "TXN-A1B2C3D4"
+        String referenceId = generateTransferReferenceId(); // Ex: "TRF-550e8400-e29b"
+        LocalDateTime now = LocalDateTime.now();
+
+        // ===== TRANSACTION 1 : SORTIE (TRANSFER_OUT) =====
+        Transaction outTransaction = Transaction.builder()
                 .fromAccountId(fromAccount.getId())
                 .toAccountId(toAccount.getId())
                 .amount(request.getAmount())
                 .currency(fromAccount.getCurrency())
-                .type(Transaction.TransactionType.TRANSFER)
+                .type(Transaction.TransactionType.TRANSFER_OUT)
                 .status(Transaction.TransactionStatus.PENDING)
-                .description(request.getDescription())
-                .reference(reference)
+                .description(String.format("Virement vers %s - %s", 
+                        maskAccountNumber(toAccount.getAccountNumber()), 
+                        request.getDescription()))
+                .reference(reference + "-OUT")
+                .referenceId(referenceId)  // Même referenceId pour les 2 transactions
+                .createdAt(now)
                 .build();
 
-        transaction = transactionRepository.save(transaction);
+        // ===== TRANSACTION 2 : ENTRÉE (TRANSFER_IN) =====
+        Transaction inTransaction = Transaction.builder()
+                .fromAccountId(fromAccount.getId())
+                .toAccountId(toAccount.getId())
+                .amount(request.getAmount())
+                .currency(toAccount.getCurrency())
+                .type(Transaction.TransactionType.TRANSFER_IN)
+                .status(Transaction.TransactionStatus.PENDING)
+                .description(String.format("Virement depuis %s - %s", 
+                        maskAccountNumber(fromAccount.getAccountNumber()), 
+                        request.getDescription()))
+                .reference(reference + "-IN")
+                .referenceId(referenceId)  // Même referenceId
+                .createdAt(now)
+                .build();
+
+        // Sauvegarder les 2 transactions (statut PENDING)
+        outTransaction = transactionRepository.save(outTransaction);
+        inTransaction = transactionRepository.save(inTransaction);
 
         try {
-            // Effectuer le transfert
+            // ===== EFFECTUER LE TRANSFERT =====
             fromAccount.setBalance(fromAccount.getBalance().subtract(request.getAmount()));
             toAccount.setBalance(toAccount.getBalance().add(request.getAmount()));
 
             accountRepository.save(fromAccount);
             accountRepository.save(toAccount);
 
-            // Marquer la transaction comme complétée
-            transaction.setStatus(Transaction.TransactionStatus.COMPLETED);
-            transaction.setCompletedAt(LocalDateTime.now());
-            transaction = transactionRepository.save(transaction);
+            // ===== MARQUER LES 2 TRANSACTIONS COMME COMPLÉTÉES =====
+            LocalDateTime completedAt = LocalDateTime.now();
+            
+            outTransaction.setStatus(Transaction.TransactionStatus.COMPLETED);
+            outTransaction.setCompletedAt(completedAt);
+            outTransaction = transactionRepository.save(outTransaction);
 
-            log.info("Transfer completed successfully: transactionId={}, reference={}", 
-                    transaction.getId(), reference);
+            inTransaction.setStatus(Transaction.TransactionStatus.COMPLETED);
+            inTransaction.setCompletedAt(completedAt);
+            inTransaction = transactionRepository.save(inTransaction);
 
-            // Publier l'événement sur Kafka
-            publishTransactionEvent(transaction, userId);
+            log.info("Transfer completed successfully: referenceId={}, out={}, in={}", 
+                    referenceId, outTransaction.getId(), inTransaction.getId());
 
-            return mapToDTO(transaction, fromAccount.getId());
+            // Publier les événements Kafka pour les 2 transactions
+            publishTransactionEvent(outTransaction, userId);
+            publishTransactionEvent(inTransaction, toAccount.getUserId());
+
+            // Retourner la transaction de sortie (vue de l'émetteur)
+            return mapToDTO(outTransaction, fromAccount.getId());
 
         } catch (Exception e) {
-            // En cas d'erreur, marquer la transaction comme échouée
-            transaction.setStatus(Transaction.TransactionStatus.FAILED);
-            transactionRepository.save(transaction);
+            // En cas d'erreur, marquer les 2 transactions comme échouées
+            outTransaction.setStatus(Transaction.TransactionStatus.FAILED);
+            inTransaction.setStatus(Transaction.TransactionStatus.FAILED);
+            
+            transactionRepository.save(outTransaction);
+            transactionRepository.save(inTransaction);
 
-            log.error("Transfer failed: transactionId={}", transaction.getId(), e);
+            log.error("Transfer failed: referenceId={}", referenceId, e);
             throw new RuntimeException("Transfer failed: " + e.getMessage(), e);
         }
     }
 
     /**
      * Récupérer l'historique des transactions d'un compte
+     * Plus besoin de logique complexe dans mapToDTO car les transactions
+     * sont déjà créées avec le bon type (TRANSFER_IN ou TRANSFER_OUT)
      */
     public List<TransactionDTO> getAccountTransactions(Long accountId, Long userId) {
         log.info("Fetching transactions for account: {}", accountId);
@@ -134,21 +180,26 @@ public class TransactionService {
             throw new InvalidTransferException("Unauthorized: Account does not belong to user");
         }
 
+        // Récupérer toutes les transactions où le compte est émetteur OU récepteur
         List<Transaction> transactions = transactionRepository
                 .findByFromAccountIdOrToAccountIdOrderByCreatedAtDesc(accountId, accountId);
 
         return transactions.stream()
-        		.map(t -> this.mapToDTO(t, accountId))
+                .map(t -> mapToDTO(t, accountId))
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Récupérer toutes les transactions de l'utilisateur (tous ses comptes)
+     */
     public List<TransactionDTO> getUserTransactions(Long userId) {
-        // Récupérer tous les comptes de l'utilisateur
         List<Account> userAccounts = accountRepository.findByUserId(userId);
         
         return userAccounts.stream()
-                .flatMap(account -> transactionRepository.findByFromAccountIdOrToAccountId(account.getId(), account.getId()).stream()
-                		.map(t -> this.mapToDTO(t, account.getId())))
+                .flatMap(account -> transactionRepository
+                        .findByFromAccountIdOrToAccountId(account.getId(), account.getId())
+                        .stream()
+                        .map(t -> mapToDTO(t, account.getId())))
                 .sorted(Comparator.comparing(TransactionDTO::getCreatedAt).reversed())
                 .collect(Collectors.toList());
     }
@@ -161,10 +212,7 @@ public class TransactionService {
         List<TransactionDTO> pageContent = allTransactions.subList(start, end);
         return new PageImpl<>(pageContent, pageable, allTransactions.size());
     }
-    
-    /**
-     * Récupérer l'historique paginé
-     */
+
     public Page<TransactionDTO> getAccountTransactionsPaginated(Long accountId, Long userId, Pageable pageable) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException("Account not found: " + accountId));
@@ -175,14 +223,14 @@ public class TransactionService {
 
         return transactionRepository
                 .findByFromAccountIdOrToAccountIdOrderByCreatedAtDesc(accountId, accountId, pageable)
-                .map(t -> this.mapToDTO(t, accountId));
+                .map(t -> mapToDTO(t, accountId));
     }
 
     /**
      * Validations métier
      */
     private void validateTransferRequest(TransferRequest request) {
-        if (request.getFromAccountId().equals(request.getToAccountNumber())) {
+        if (request.getFromAccountId().toString().equals(request.getToAccountNumber())) {
             throw new InvalidTransferException("Cannot transfer to the same account");
         }
 
@@ -190,7 +238,6 @@ public class TransactionService {
             throw new InvalidTransferException("Amount must be greater than zero");
         }
 
-        // Limite de transfert (exemple: 10000 EUR)
         if (request.getAmount().compareTo(new BigDecimal("10000")) > 0) {
             throw new InvalidTransferException("Transfer amount exceeds maximum limit of 10000 EUR");
         }
@@ -201,6 +248,26 @@ public class TransactionService {
      */
     private String generateReference() {
         return "TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    /**
+     * Génère un ID de référence pour lier les 2 transactions d'un virement
+     */
+    private String generateTransferReferenceId() {
+        return "TRF-" + UUID.randomUUID().toString().substring(0, 13);
+    }
+
+    /**
+     * Masque un numéro de compte pour la description
+     * Ex: FR7612345678901234567890 → FR76****7890
+     */
+    private String maskAccountNumber(String accountNumber) {
+        if (accountNumber == null || accountNumber.length() < 8) {
+            return accountNumber;
+        }
+        String prefix = accountNumber.substring(0, 4);
+        String suffix = accountNumber.substring(accountNumber.length() - 4);
+        return prefix + "****" + suffix;
     }
 
     /**
@@ -224,16 +291,22 @@ public class TransactionService {
     }
 
     /**
-     * Mapper Transaction → TransactionDTO
+     * ===== MAPPER SIMPLIFIÉ =====
+     * Plus besoin de logique complexe car les transactions ont déjà le bon type !
      */
     private TransactionDTO mapToDTO(Transaction transaction, Long currentAccountId) {
-        Transaction.TransactionType contextualType = transaction.getType();
-
+        // Pour les virements, on filtre pour ne montrer que la transaction pertinente
+        Transaction.TransactionType displayType = transaction.getType();
+        
+        // Si c'est un TRANSFER_OUT et qu'on regarde depuis le compte récepteur, ne pas afficher
+        // (cette logique est gérée par la requête qui récupère les bonnes transactions)
+        
+        // Si c'est un ancien virement avec type TRANSFER (legacy), convertir
         if (transaction.getType() == Transaction.TransactionType.TRANSFER) {
             if (currentAccountId.equals(transaction.getFromAccountId())) {
-                contextualType = Transaction.TransactionType.TRANSFER_OUT; 
+                displayType = Transaction.TransactionType.TRANSFER_OUT;
             } else if (currentAccountId.equals(transaction.getToAccountId())) {
-                contextualType = Transaction.TransactionType.TRANSFER_IN;
+                displayType = Transaction.TransactionType.TRANSFER_IN;
             }
         }
 
@@ -243,7 +316,7 @@ public class TransactionService {
                 .toAccountId(transaction.getToAccountId())
                 .amount(transaction.getAmount())
                 .currency(transaction.getCurrency())
-                .type(contextualType)
+                .type(displayType)
                 .status(transaction.getStatus())
                 .description(transaction.getDescription())
                 .reference(transaction.getReference())

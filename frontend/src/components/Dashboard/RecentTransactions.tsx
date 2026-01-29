@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, ArrowDownRight, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Transaction } from '../../types/transaction.types';
 import { formatCurrency, formatDateTime, formatStatus } from '../../utils/formatters';
 
@@ -10,17 +10,17 @@ interface RecentTransactionsProps {
 }
 
 const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions, loading }) => {
-  // Fonction pour obtenir l'icône selon le type de transaction
+
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'DEPOSIT':
         return <ArrowUpRight className="h-5 w-5 text-green-600" />;
       case 'WITHDRAWAL':
-        return <ArrowDownRight className="h-5 w-5 text-red-600" />;
+        return <ArrowDownLeft className="h-5 w-5 text-red-600" />;
       case 'TRANSFER_OUT':
-        return <ArrowDownRight className="h-5 w-5 text-red-600" />;
+        return <ArrowDownLeft className="h-5 w-5 text-red-600" />;
       case 'TRANSFER_IN':
-        return <ArrowUpRight className="h-5 w-5 text-red-600" />;
+        return <ArrowUpRight className="h-5 w-5 text-green-600" />;
       case 'PAYMENT':
         return <Clock className="h-5 w-5 text-blue-600" />;
       default:
@@ -28,7 +28,6 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions, l
     }
   };
 
-  // Fonction pour obtenir l'icône de statut
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'COMPLETED':
@@ -42,7 +41,6 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions, l
     }
   };
 
-  // Fonction pour obtenir la couleur du montant
   const getAmountColor = (type: string) => {
     switch (type) {
       case 'DEPOSIT':
@@ -137,7 +135,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({ transactions, l
               {/* Montant */}
               <div className="flex-shrink-0 text-right">
                 <p className={`text-lg font-semibold ${getAmountColor(transaction.type)}`}>
-                  {transaction.type === 'DEPOSIT' ? '+' : '-'}
+                  {transaction.type === 'DEPOSIT' || transaction.type === 'TRANSFER_IN' ? '+' : '-'}
                   {formatCurrency(transaction.amount)}
                 </p>
               </div>

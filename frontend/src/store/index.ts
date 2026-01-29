@@ -12,13 +12,11 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // Ignorer les actions spécifiques si nécessaire
         ignoredActions: ['auth/login/fulfilled', 'auth/register/fulfilled'],
       },
     }),
 });
 
-// Types pour TypeScript
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 

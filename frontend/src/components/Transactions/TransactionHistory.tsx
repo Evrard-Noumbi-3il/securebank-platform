@@ -32,32 +32,30 @@ const TransactionHistory: React.FC = () => {
     dispatch(fetchTransactions());
   }, [dispatch]);
 
-  // Filter transactions
+
   const filteredTransactions = useMemo(() => {
     let filtered = [...transactions];
 
-    // Search filter
+
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(
         (t) =>
           t.description.toLowerCase().includes(searchLower) ||
           t.id.toLowerCase().includes(searchLower) ||
-          t.id.includes(searchLower)
+          t.toAccountId.includes(searchLower)
       );
     }
 
-    // Type filter
+   
     if (filters.type) {
       filtered = filtered.filter((t) => t.type === filters.type);
     }
 
-    // Status filter
     if (filters.status) {
       filtered = filtered.filter((t) => t.status === filters.status);
     }
 
-    // Date filters
     if (filters.dateFrom) {
       filtered = filtered.filter(
         (t) => new Date(t.createdAt) >= new Date(filters.dateFrom)
@@ -69,7 +67,6 @@ const TransactionHistory: React.FC = () => {
       );
     }
 
-    // Sort by date (most recent first)
     filtered.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -78,7 +75,6 @@ const TransactionHistory: React.FC = () => {
     return filtered;
   }, [transactions, filters]);
 
-  // Pagination
   const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
   const paginatedTransactions = filteredTransactions.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -87,7 +83,7 @@ const TransactionHistory: React.FC = () => {
 
   const handleFilterChange = (newFilters: FilterValues) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1); 
   };
 
   const handlePageChange = (page: number) => {
@@ -95,7 +91,11 @@ const TransactionHistory: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (loading) {
+  const handleRefresh = () => {
+    dispatch(fetchTransactions());
+  };
+
+  if (loading && transactions.length === 0) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
@@ -110,6 +110,12 @@ const TransactionHistory: React.FC = () => {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
         <p className="text-red-700 font-medium">Erreur: {error}</p>
+        <button
+          onClick={handleRefresh}
+          className="mt-4 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium"
+        >
+          Réessayer
+        </button>
       </div>
     );
   }
@@ -126,10 +132,11 @@ const TransactionHistory: React.FC = () => {
         </div>
         
         <button
-          onClick={() => dispatch(fetchTransactions())}
-          className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+          onClick={handleRefresh}
+          disabled={loading}
+          className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
         >
-          Actualiser
+          {loading ? 'Actualisation...' : 'Actualiser'}
         </button>
       </div>
 
@@ -176,7 +183,7 @@ const TransactionHistory: React.FC = () => {
 
             {[...Array(totalPages)].map((_, i) => {
               const page = i + 1;
-              // Show first page, last page, current page, and pages around current
+
               if (
                 page === 1 ||
                 page === totalPages ||

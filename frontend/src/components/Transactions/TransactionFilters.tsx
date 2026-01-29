@@ -97,9 +97,9 @@ const TransactionFilters: React.FC<TransactionFiltersProps> = ({ onFilterChange 
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Tous les types</option>
-              <option value={"DEPOSIT"}>Crédit</option>
-              <option value={"WITHDRAWAL"}>Débit</option>
-              <option value={"TRANSFERT_IN"}>Virement entrant</option>
+              <option value={"DEPOSIT"}>Dépôt</option>
+              <option value={"WITHDRAWAL"}>Retrait</option>
+              <option value={"TRANSFER_IN"}>Virement entrant</option>
               <option value={"TRANSFER_OUT"}>Virement sortant</option>
               <option value={"PAYMENT"}>Paiement</option>
             </select>

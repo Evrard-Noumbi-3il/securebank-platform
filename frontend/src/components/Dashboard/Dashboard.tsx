@@ -23,10 +23,13 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchAccounts());
+  }, [dispatch]);
+
+  useEffect(() => {
     dispatch(fetchTransactions());
   }, [dispatch]);
 
-  // Données du graphique (simulées pour démo)
+
   const chartData = [
     { name: 'Jan', balance: 8000 },
     { name: 'Fév', balance: 8500 },
@@ -36,7 +39,6 @@ const Dashboard: React.FC = () => {
     { name: 'Juin', balance: totalBalance },
   ];
 
-  // Calculer les statistiques
   const totalIncome = recentTransactions
     .filter(t => t.type === 'DEPOSIT' || t.type === 'TRANSFER_IN')
     .reduce((sum, t) => sum + t.amount, 0);

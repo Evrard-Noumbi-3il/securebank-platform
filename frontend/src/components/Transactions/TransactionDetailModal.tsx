@@ -1,7 +1,7 @@
 import React from 'react';
-import { Transaction} from '../../types/transaction.types';
-import { formatCurrency, formatDateTime, formatStatus } from '../../utils/formatters';
-import { X, ArrowUpRight, ArrowDownLeft, CheckCircle, Clock, XCircle, Ban, Calendar, FileText, Wallet } from 'lucide-react';
+import { Transaction, isDebitTransaction, isCreditTransaction, getTransactionTypeLabel, getTransactionStatusLabel } from '../../types/transaction.types';
+import { formatCurrency, formatDateTime } from '../../utils/formatters';
+import { X, ArrowUpRight, ArrowDownLeft, CheckCircle, Clock, XCircle, Ban, Calendar, FileText, Hash, Wallet, Link as LinkIcon } from 'lucide-react';
 
 interface TransactionDetailsModalProps {
   transaction: Transaction;
@@ -9,8 +9,8 @@ interface TransactionDetailsModalProps {
 }
 
 const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({ transaction, onClose }) => {
-  const isDebit = transaction.type === "WITHDRAWAL" || transaction.type === "PAYMENT" || transaction.type === "TRANSFER_OUT";
-  const isCredit = transaction.type === "DEPOSIT" || transaction.type === "TRANSFER_IN";
+  const isDebit = isDebitTransaction(transaction.type);
+  const isCredit = isCreditTransaction(transaction.type);
 
   const getStatusIcon = () => {
     switch (transaction.status) {
@@ -42,35 +42,18 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({ trans
     }
   };
 
-  const getTypeLabel = () => {
-    switch (transaction.type) {
-      case "DEPOSIT":
-        return 'Dépôt';
-      case "WITHDRAWAL":
-        return 'Retrait';
-      case "TRANSFER_IN":
-        return 'Virement entrant';
-      case "TRANSFER_OUT":
-        return 'Virement sortant';
-      case "PAYMENT":
-        return 'Paiement';
-      default:
-        return transaction.type;
-    }
-  };
-
   const getTypeIcon = () => {
-    if (isCredit) {
-      return (
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-          <ArrowUpRight className="w-8 h-8 text-green-600" />
-        </div>
-      );
-    }
     if (isDebit) {
       return (
         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-          <ArrowDownLeft className="w-8 h-8 text-red-600" />
+          <ArrowUpRight className="w-8 h-8 text-red-600" />
+        </div>
+      );
+    }
+    if (isCredit) {
+      return (
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+          <ArrowDownLeft className="w-8 h-8 text-green-600" />
         </div>
       );
     }
@@ -114,7 +97,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({ trans
               {getStatusIcon()}
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-1">
-              {formatStatus(transaction.status)}
+              {getTransactionStatusLabel(transaction.status)}
             </h3>
             <p className="text-sm text-gray-600">
               {getStatusMessage()}
@@ -152,20 +135,30 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({ trans
               <ArrowUpRight className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-xs text-gray-500 mb-1">Type de transaction</p>
-                <p className="text-sm font-medium text-gray-900">{getTypeLabel()}</p>
+                <p className="text-sm font-medium text-gray-900">{getTransactionTypeLabel(transaction.type)}</p>
               </div>
             </div>
 
-            {/* Account ID */}
-            <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
-              <Wallet className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-xs text-gray-500 mb-1">
-                  Compte concerné
-                </p>
-                <p className="text-sm font-medium text-gray-900 font-mono">
-                  IBAN: {transaction.toAccountId}
-                </p>
+            {/* From/To Account IDs */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+                <Wallet className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 mb-1">Compte émetteur</p>
+                  <p className="text-sm font-medium text-gray-900 font-mono">
+                    ID: {transaction.fromAccountId}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+                <Wallet className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 mb-1">Compte bénéficiaire</p>
+                  <p className="text-sm font-medium text-gray-900 font-mono">
+                    ID: {transaction.toAccountId}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -177,10 +170,51 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({ trans
                 <p className="text-sm font-medium text-gray-900">
                   {formatDateTime(transaction.createdAt)}
                 </p>
+                {transaction.completedAt && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Complété le : {formatDateTime(transaction.completedAt)}
+                  </p>
+                )}
               </div>
             </div>
 
-            
+            {/* Reference */}
+            <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+              <Hash className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs text-gray-500 mb-1">Référence</p>
+                <p className="text-sm font-medium text-gray-900 font-mono">
+                  {transaction.reference}
+                </p>
+              </div>
+            </div>
+
+            {/* Reference ID (if exists) */}
+            {transaction.referenceId && (
+              <div className="flex items-start space-x-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <LinkIcon className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs text-blue-600 mb-1">ID de référence du virement</p>
+                  <p className="text-sm font-medium text-blue-900 font-mono break-all">
+                    {transaction.referenceId}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Cet ID lie les 2 transactions (sortie + entrée) du même virement
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Transaction ID */}
+            <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
+              <Hash className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-xs text-gray-500 mb-1">ID de transaction</p>
+                <p className="text-sm font-medium text-gray-900 font-mono break-all">
+                  {transaction.id}
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Additional Info based on Status */}

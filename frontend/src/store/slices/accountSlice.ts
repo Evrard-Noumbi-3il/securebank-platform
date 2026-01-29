@@ -2,15 +2,13 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { accountService } from '../../services/accountService';
 import { Account, AccountState, CreateAccountRequest } from '../../types/account.types';
 
-// État initial
+
 const initialState: AccountState = {
   accounts: [],
   selectedAccount: null,
   loading: false,
   error: null,
 };
-
-// Thunks asynchrones
 
 /**
  * Récupérer tous les comptes
@@ -73,22 +71,22 @@ export const deleteAccount = createAsyncThunk(
   }
 );
 
-// Slice
+
 const accountSlice = createSlice({
   name: 'accounts',
   initialState,
   reducers: {
-    // Action pour sélectionner un compte
     selectAccount: (state, action: PayloadAction<Account | null>) => {
       state.selectedAccount = action.payload;
     },
-    // Action pour réinitialiser l'erreur
     clearError: (state) => {
       state.error = null;
     },
   },
   extraReducers: (builder) => {
-    // Fetch Accounts
+    /* 
+     * Fetch Accounts
+     */
     builder
       .addCase(fetchAccounts.pending, (state) => {
         state.loading = true;
@@ -104,7 +102,9 @@ const accountSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Fetch Account By ID
+    /* 
+     * Fetch Account By ID
+     */
     builder
       .addCase(fetchAccountById.pending, (state) => {
         state.loading = true;
@@ -120,7 +120,9 @@ const accountSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Create Account
+    /*
+     * Create Account
+     */
     builder
       .addCase(createAccount.pending, (state) => {
         state.loading = true;
@@ -136,7 +138,9 @@ const accountSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Delete Account
+    /*
+     * Delete Account
+     */
     builder
       .addCase(deleteAccount.pending, (state) => {
         state.loading = true;
@@ -157,16 +161,20 @@ const accountSlice = createSlice({
   },
 });
 
-// Actions
+
 export const { selectAccount, clearError } = accountSlice.actions;
 
-// Selectors
+/*
+ * Selectors
+ */
 export const selectAccounts = (state: { accounts: AccountState }) => state.accounts.accounts;
 export const selectSelectedAccount = (state: { accounts: AccountState }) => state.accounts.selectedAccount;
 export const selectAccountsLoading = (state: { accounts: AccountState }) => state.accounts.loading;
 export const selectAccountsError = (state: { accounts: AccountState }) => state.accounts.error;
 
-// Selector pour calculer le total balance
+/*
+ * Selector pour calculer le total balance
+ */
 export const selectTotalBalance = (state: { accounts: AccountState }) => {
   return state.accounts.accounts.reduce((total: number, account: Account) => total + account.balance, 0);
 };

@@ -74,7 +74,6 @@ const TransferForm: React.FC = () => {
       setTransferSuccess(true);
       setShowConfirmation(false);
       
-      // Reset form after 2 seconds
       setTimeout(() => {
         setFormData({
           fromAccountId: '',
@@ -83,7 +82,7 @@ const TransferForm: React.FC = () => {
           description: '',
         });
         setTransferSuccess(false);
-        dispatch(fetchAccounts()); // Refresh accounts to update balances
+        dispatch(fetchAccounts()); 
       }, 2000);
     } catch (error) {
       console.error('Transfer failed:', error);
@@ -92,7 +91,6 @@ const TransferForm: React.FC = () => {
 
   const handleInputChange = (field: keyof TransferRequest, value: string | number) => {
     setFormData({ ...formData, [field]: value });
-    // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors({ ...errors, [field]: '' });
     }

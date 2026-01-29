@@ -13,12 +13,10 @@ const getUserFromStorage = (): User | null => {
   }
 };
 
-// Helper function to get token from localStorage
 const getTokenFromStorage = (): string | null => {
   return localStorage.getItem('token');
   };
   
-// État initial
 const initialState: AuthState = {
   user: getUserFromStorage(),
   accessToken: localStorage.getItem('accessToken'),
@@ -28,7 +26,6 @@ const initialState: AuthState = {
   error: null,
 };
 
-// Thunks asynchrones
 
 /**
  * Inscription d'un utilisateur
@@ -39,7 +36,6 @@ export const register = createAsyncThunk(
     try {
       const response = await authService.register(data);
       
-      // Sauvegarder les tokens
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
       
@@ -58,8 +54,6 @@ export const login = createAsyncThunk(
   async (data: LoginRequest, { rejectWithValue }) => {
     try {
       const response = await authService.login(data);
-      
-      // Sauvegarder les tokens
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
       
@@ -78,14 +72,11 @@ export const logout = createAsyncThunk(
   async (_) => {
     try {
       await authService.logout();
-      
-      // Supprimer les tokens
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       
       return null;
     } catch (error: any) {
-      // Même si ça échoue, on déconnecte localement
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       return null;
@@ -108,16 +99,20 @@ export const getProfile = createAsyncThunk(
   }
 );
 
-// Slice
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    // Action pour réinitialiser l'erreur
+    /*
+     * Action pour réinitialiser l'erreur
+     */
     clearError: (state) => {
       state.error = null;
     },
-    // Action pour définir l'utilisateur
+    /*
+     * Action pour définir l'utilisateur
+     */
     restoreAuth: (state) => {
       const user = getUserFromStorage();
       const token = getTokenFromStorage();
@@ -128,7 +123,9 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Register
+    /*
+     * Register
+     */
     builder
       .addCase(register.pending, (state) => {
         state.loading = true;
@@ -158,7 +155,9 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
       });
 
-    // Login
+    /*
+     * Login
+     */
     builder
       .addCase(login.pending, (state) => {
         state.loading = true;
@@ -187,7 +186,9 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
       });
 
-    // Logout
+    /*
+     * Logout
+     */
     builder
       .addCase(logout.pending, (state) => {
         state.loading = true;
@@ -204,7 +205,6 @@ const authSlice = createSlice({
         localStorage.removeItem('user');
       })
       .addCase(logout.rejected, (state) => {
-        // Même en cas d'erreur, on déconnecte localement
         state.loading = false;
         state.isAuthenticated = false;
         state.user = null;
@@ -213,7 +213,9 @@ const authSlice = createSlice({
         state.error = null;
       });
 
-    // Get Profile
+    /*
+     * Get Profile
+     */
     builder
       .addCase(getProfile.pending, (state) => {
         state.loading = true;
@@ -230,10 +232,12 @@ const authSlice = createSlice({
   },
 });
 
-// Actions
+
 export const { clearError, restoreAuth } = authSlice.actions;
 
-// Selectors
+/*
+ * Selectors
+ */
 export const selectAuth = (state: RootState) => state.auth;
 export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
 export const selectUser = (state: RootState) => state.auth.user;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Transaction, TransactionStatus } from '../../types/transaction.types';
+import { Transaction, TransactionStatus, isDebitTransaction, isCreditTransaction, getTransactionTypeLabel } from '../../types/transaction.types';
 import { formatCurrency, formatDateTime, formatStatus } from '../../utils/formatters';
 import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Ban } from 'lucide-react';
 import TransactionDetailsModal from './TransactionDetailModal';
@@ -10,9 +10,9 @@ interface TransactionItemProps {
 
 const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
   const [showDetails, setShowDetails] = useState(false);
-
-  const isDebit = transaction.type === "WITHDRAWAL" || transaction.type === "PAYMENT" || transaction.type === "TRANSFER_OUT";
-  const isCredit = transaction.type === "DEPOSIT" || transaction.type === "TRANSFER_IN";
+  
+  const isDebit = isDebitTransaction(transaction.type);
+  const isCredit = isCreditTransaction(transaction.type);
 
   const getStatusIcon = () => {
     switch (transaction.status) {
@@ -22,7 +22,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
         return <Clock className="w-5 h-5 text-yellow-500" />;
       case "FAILED":
         return <XCircle className="w-5 h-5 text-red-500" />;
-      case 'CANCELLED':
+      case "CANCELLED":
         return <Ban className="w-5 h-5 text-gray-400" />;
       default:
         return null;
@@ -31,10 +31,10 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
 
   const getStatusBadge = () => {
     const statusConfig: Record<TransactionStatus, string> = {
-      COMPLETED: 'bg-green-50 text-green-700 border-green-200',
-      PENDING: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      FAILED: 'bg-red-50 text-red-700 border-red-200',
-      CANCELLED: 'bg-gray-50 text-gray-700 border-gray-200',
+      ["COMPLETED"]: 'bg-green-50 text-green-700 border-green-200',
+      ["PENDING"]: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      ["FAILED"]: 'bg-red-50 text-red-700 border-red-200',
+      ["CANCELLED"]: 'bg-gray-50 text-gray-700 border-gray-200',
     };
 
     return (
@@ -85,7 +85,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
                 {formatDateTime(transaction.createdAt)}
               </p>
               <p className="text-xs text-gray-400">
-                Réf: {String(transaction.id).substring(0, 8)}...
+                {getTransactionTypeLabel(transaction.type)}
               </p>
             </div>
           </div>
@@ -98,7 +98,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
               {isDebit ? '-' : '+'} {formatCurrency(transaction.amount)}
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              ID: {String(transaction.id).substring(0, 8)}
+              Réf: {transaction.reference}
             </p>
           </div>
           

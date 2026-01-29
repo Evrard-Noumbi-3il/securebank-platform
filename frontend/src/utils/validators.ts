@@ -1,4 +1,6 @@
-// Email validation
+/*
+ * Email validation
+ */
 export const validateEmail = (email: string): { isValid: boolean; error?: string } => {
   if (!email) {
     return { isValid: false, error: 'L\'email est requis' };
@@ -13,7 +15,9 @@ export const validateEmail = (email: string): { isValid: boolean; error?: string
   return { isValid: true };
 };
 
-// Password validation
+/*
+ * Password validation
+ */
 export const validatePassword = (password: string): { isValid: boolean; error?: string } => {
   if (!password) {
     return { isValid: false, error: 'Le mot de passe est requis' };
@@ -42,7 +46,9 @@ export const validatePassword = (password: string): { isValid: boolean; error?: 
   return { isValid: true };
 };
 
-// Password confirmation validation
+/*
+ * Password confirmation validation
+ */
 export const validatePasswordConfirmation = (
   password: string,
   confirmPassword: string
@@ -58,26 +64,24 @@ export const validatePasswordConfirmation = (
   return { isValid: true };
 };
 
-// IBAN validation (format français)
+/*
+ * IBAN validation (format français)
+ */
 export const validateIBAN = (iban: string): { isValid: boolean; error?: string } => {
   if (!iban) {
     return { isValid: false, error: 'L\'IBAN est requis' };
   }
 
-  // Remove spaces and convert to uppercase
   const cleanedIBAN = iban.replace(/\s/g, '').toUpperCase();
 
-  // Check length (27 for French IBAN)
   if (cleanedIBAN.length !== 27) {
     return { isValid: false, error: 'L\'IBAN doit contenir 27 caractères' };
   }
 
-  // Check if starts with FR
   if (!cleanedIBAN.startsWith('FR')) {
     return { isValid: false, error: 'L\'IBAN doit commencer par FR' };
   }
 
-  // Basic format check (FR + 2 digits + 23 alphanumeric)
   const ibanRegex = /^FR[0-9]{2}[A-Z0-9]{23}$/;
   if (!ibanRegex.test(cleanedIBAN)) {
     return { isValid: false, error: 'Format d\'IBAN invalide' };
@@ -86,13 +90,14 @@ export const validateIBAN = (iban: string): { isValid: boolean; error?: string }
   return { isValid: true };
 };
 
-// Account number validation
+/* 
+ * Account number validation
+ */
 export const validateAccountNumber = (accountNumber: string): { isValid: boolean; error?: string } => {
   if (!accountNumber) {
     return { isValid: false, error: 'Le numéro de compte est requis' };
   }
 
-  // Check if starts with ACC and has at least 6 digits
   const accountRegex = /^ACC[0-9]{6,}$/;
   
   if (!accountRegex.test(accountNumber)) {
@@ -102,7 +107,9 @@ export const validateAccountNumber = (accountNumber: string): { isValid: boolean
   return { isValid: true };
 };
 
-// Amount validation
+/*
+ * Amount validation
+ */
 export const validateAmount = (
   amount: number,
   min: number = 0.01,
@@ -128,7 +135,6 @@ export const validateAmount = (
     return { isValid: false, error: `Le montant maximum est de ${max}€` };
   }
 
-  // Check for more than 2 decimal places
   const decimalPlaces = (amount.toString().split('.')[1] || '').length;
   if (decimalPlaces > 2) {
     return { isValid: false, error: 'Le montant ne peut avoir plus de 2 décimales' };
@@ -137,7 +143,9 @@ export const validateAmount = (
   return { isValid: true };
 };
 
-// Balance validation for transfers
+/* 
+ * Balance validation for transfers
+ */
 export const validateBalance = (
   amount: number,
   balance: number
@@ -149,16 +157,16 @@ export const validateBalance = (
   return { isValid: true };
 };
 
-// Phone number validation (French format)
+/*
+ * Phone number validation (format Francais)
+ */
 export const validatePhoneNumber = (phone: string): { isValid: boolean; error?: string } => {
   if (!phone) {
     return { isValid: false, error: 'Le numéro de téléphone est requis' };
   }
 
-  // Remove spaces, dots, and dashes
   const cleanedPhone = phone.replace(/[\s.-]/g, '');
 
-  // French phone number: 10 digits starting with 0
   const phoneRegex = /^0[1-9][0-9]{8}$/;
   
   if (!phoneRegex.test(cleanedPhone)) {
@@ -168,7 +176,9 @@ export const validatePhoneNumber = (phone: string): { isValid: boolean; error?: 
   return { isValid: true };
 };
 
-// Name validation
+/*
+ * Name validation
+ */
 export const validateName = (name: string, fieldName: string = 'Nom'): { isValid: boolean; error?: string } => {
   if (!name) {
     return { isValid: false, error: `${fieldName} est requis` };
@@ -182,7 +192,6 @@ export const validateName = (name: string, fieldName: string = 'Nom'): { isValid
     return { isValid: false, error: `${fieldName} ne peut dépasser 50 caractères` };
   }
 
-  // Only letters, spaces, hyphens, and apostrophes
   const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]+$/;
   
   if (!nameRegex.test(name)) {
@@ -192,7 +201,9 @@ export const validateName = (name: string, fieldName: string = 'Nom'): { isValid
   return { isValid: true };
 };
 
-// Date validation
+/*
+ * Date validation
+ */
 export const validateDate = (date: string, fieldName: string = 'Date'): { isValid: boolean; error?: string } => {
   if (!date) {
     return { isValid: false, error: `${fieldName} est requise` };
@@ -207,7 +218,9 @@ export const validateDate = (date: string, fieldName: string = 'Date'): { isVali
   return { isValid: true };
 };
 
-// Date range validation
+/*
+ * Date range validation
+ */
 export const validateDateRange = (
   startDate: string,
   endDate: string
@@ -232,7 +245,9 @@ export const validateDateRange = (
   return { isValid: true };
 };
 
-// Description validation
+/* 
+ * Description validation
+ */
 export const validateDescription = (
   description: string,
   minLength: number = 3,
@@ -253,7 +268,9 @@ export const validateDescription = (
   return { isValid: true };
 };
 
-// Generic required field validation
+/*
+ * Generic required field validation
+ */
 export const validateRequired = (value: any, fieldName: string): { isValid: boolean; error?: string } => {
   if (!value || (typeof value === 'string' && value.trim() === '')) {
     return { isValid: false, error: `${fieldName} est requis` };
@@ -262,7 +279,9 @@ export const validateRequired = (value: any, fieldName: string): { isValid: bool
   return { isValid: true };
 };
 
-// Validate all fields at once
+/*
+ * Validate all fields at once
+ */
 export const validateFields = (
   fields: { [key: string]: any },
   validations: { [key: string]: (value: any) => { isValid: boolean; error?: string } }

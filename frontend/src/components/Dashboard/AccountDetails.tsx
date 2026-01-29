@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { selectAccounts, fetchAccounts } from '../../store/slices/accountSlice';
 import { fetchAccountTransactions } from '../../store/slices/transactionSlice';
+import { isDebitTransaction, isCreditTransaction } from '../../types/transaction.types';
 import TransactionItem from '../Transactions/TransactionItem';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import {
@@ -31,24 +32,22 @@ const AccountDetails: React.FC = () => {
   
   const [showAllTransactions, setShowAllTransactions] = useState(false);
 
-  // Convert accountId to match type (string or number)
+
   const account = accounts.find((acc) => String(acc.id) === String(accountId));
 
-  // Fetch accounts if not loaded (on page refresh)
+
   useEffect(() => {
     if (accounts.length === 0) {
       dispatch(fetchAccounts());
     }
   }, [dispatch, accounts.length]);
 
-  // Fetch transactions for this account
   useEffect(() => {
     if (accountId) {
       dispatch(fetchAccountTransactions(accountId));
     }
   }, [dispatch, accountId]);
 
-  // Show loader while accounts are being fetched
   if (accountsLoading && !account) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -60,7 +59,7 @@ const AccountDetails: React.FC = () => {
     );
   }
 
-  // Show error only if accounts are loaded but account not found
+
   if (!account && accounts.length > 0) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -79,7 +78,6 @@ const AccountDetails: React.FC = () => {
     );
   }
 
-  // Still loading accounts
   if (!account) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -130,13 +128,12 @@ const AccountDetails: React.FC = () => {
     }
   };
 
-  // Calculate statistics using your transaction types
   const totalIncome = transactions
-    .filter((t) => t.type === 'DEPOSIT' || t.type === 'TRANSFER_IN')
+    .filter((t) => isCreditTransaction(t.type))
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalExpense = transactions
-    .filter((t) => t.type === 'WITHDRAWAL' || t.type === 'PAYMENT' || t.type === 'TRANSFER_OUT')
+    .filter((t) => isDebitTransaction(t.type))
     .reduce((sum, t) => sum + t.amount, 0);
 
   const displayedTransactions = showAllTransactions ? transactions : transactions.slice(0, 10);
@@ -201,7 +198,10 @@ const AccountDetails: React.FC = () => {
               <span className="opacity-90">Devise</span>
               <span className="font-medium">{account.currency}</span>
             </div>
-            
+            <div className="flex items-center justify-between text-sm">
+              <span className="opacity-90">ID Compte</span>
+              <span className="font-mono text-xs">{account.id}</span>
+            </div>
           </div>
         </div>
       </div>

@@ -1,43 +1,35 @@
 import api from './api';
-import { Transaction, TransferRequest } from '../types/transaction.types';
+import { TransferRequest, Transaction } from '../types/transaction.types';
 
-export const transactionService = {
-
-    /**
-
-   * Récupérer toutes les transactions de l'utilisateur
-
-   */
-
-  getTransactions: async (): Promise<Transaction[]> => {
-
-    const response = await api.get<Transaction[]>('/transactions');
-
+const transactionService = {
+  getAllUserTransactions: async (): Promise<Transaction[]> => {
+    const response = await api.get('/transactions');
     return response.data;
-
   },
-  
-  /**
-   * Récupérer les transactions d'un compte spécifique
-   */
+
+
   getAccountTransactions: async (accountId: string): Promise<Transaction[]> => {
-    const response = await api.get<Transaction[]>(`/transactions/account/${accountId}`);
+    const response = await api.get(`/transactions/account/${accountId}`);
     return response.data;
   },
 
-  /**
-   * Effectuer un virement
-   */
-  transfer: async (data: TransferRequest): Promise<Transaction> => {
-    const response = await api.post<Transaction>('/transactions/transfer', data);
+
+  getAccountTransactionsPaginated: async (
+    accountId: string,
+    page: number = 0,
+    size: number = 20
+  ): Promise<{ content: Transaction[]; totalPages: number; totalElements: number }> => {
+    const response = await api.get(`/transactions/account/${accountId}/paginated`, {
+      params: { page, size },
+    });
     return response.data;
   },
 
-  /**
-   * Récupérer une transaction par son ID
-   */
-  getTransactionById: async (transactionId: string): Promise<Transaction> => {
-    const response = await api.get<Transaction>(`/transactions/${transactionId}`);
+
+  transfer: async (transferRequest: TransferRequest): Promise<Transaction> => {
+    const response = await api.post('/transactions/transfer', transferRequest);
     return response.data;
   },
 };
+
+export default transactionService;

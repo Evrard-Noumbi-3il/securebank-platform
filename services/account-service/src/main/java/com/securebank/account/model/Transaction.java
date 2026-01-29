@@ -15,7 +15,8 @@ import java.time.LocalDateTime;
 @Table(name = "transactions", indexes = {
     @Index(name = "idx_from_account", columnList = "from_account_id"),
     @Index(name = "idx_to_account", columnList = "to_account_id"),
-    @Index(name = "idx_created_at", columnList = "created_at")
+    @Index(name = "idx_created_at", columnList = "created_at"),
+    @Index(name = "idx_reference_id", columnList = "reference_id")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Data
@@ -56,6 +57,9 @@ public class Transaction {
     @Column(length = 100)
     private String reference;
 
+    @Column(length = 100)
+    private String referenceId;
+    
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

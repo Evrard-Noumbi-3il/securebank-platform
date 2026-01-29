@@ -3,25 +3,25 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAppSelector, useAppDispatch } from './store/hooks';
 import { selectIsAuthenticated, restoreAuth } from './store/slices/authSlice';
 
-// Auth Components
+{/* Auth Components */}
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import PrivateRoute from './components/Auth/PrivateRoute';
 
-// Dashboard
+{/* Dashboard */}
 import Dashboard from './components/Dashboard/Dashboard';
 
-// Accounts
+{/* Accounts */}
 import AccountsList from './components/Dashboard/AccountsList';
 import AccountDetails from './components/Dashboard/AccountDetails';
 
-// Transactions
+{/* Transactions */}
 import TransactionHistory from './components/Transactions/TransactionHistory';
 
-// Transfer
+{/* Transfer */}
 import TransferForm from './components/Transfer/TransfertForm';
 
-// Placeholder for Settings (not yet implemented)
+{/* Placeholder for Settings (not yet implemented) */}
 const SettingsPage = () => (
   <div className="p-6">
     <div className="max-w-4xl mx-auto">

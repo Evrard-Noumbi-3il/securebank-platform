@@ -22,14 +22,12 @@ const Register: React.FC = () => {
 
   const [passwordError, setPasswordError] = useState('');
 
-  // Rediriger si déjà authentifié
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);
 
-  // Nettoyer l'erreur au démontage
   useEffect(() => {
     return () => {
       dispatch(clearError());

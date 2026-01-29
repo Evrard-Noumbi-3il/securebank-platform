@@ -24,6 +24,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     
     List<Transaction> findByStatus(TransactionStatus status);
     
+    List<Transaction> findByReferenceId(String referenceId);
+    
     @Query("SELECT t FROM Transaction t WHERE " +
            "(t.fromAccountId = :accountId OR t.toAccountId = :accountId) " +
            "AND t.createdAt BETWEEN :startDate AND :endDate " +

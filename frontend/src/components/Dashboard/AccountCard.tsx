@@ -9,10 +9,7 @@ interface AccountCardProps {
 }
 
 const AccountCard: React.FC<AccountCardProps> = ({ account }) => {
-  // Choisir l'icône selon le type de compte
   const AccountIcon = account.accountType === 'CHECKING' ? CreditCard : Wallet;
-  
-  // Choisir la couleur selon le type
   const colorClasses = account.accountType === 'CHECKING'
     ? 'from-blue-500 to-blue-700'
     : 'from-purple-500 to-purple-700';
